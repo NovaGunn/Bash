@@ -1,0 +1,13 @@
+On VM
+
+ip addr
+ 
+On Proxmox
+ 
+
+qm guest exec __VMID__ ip addr nmcli con down __VNIC__ 
+qm guest exec __VMID__ ip addr nmcli con up __VNIC__
+
+
+Wide character in die at /usr/share/per15/PVE/RESTHandler.pm line 990
+Agent Error: Guest agent command failed, error was 'Failed to execute child process "ip" (Permission denied)'
