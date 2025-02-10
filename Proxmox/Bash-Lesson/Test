@@ -1,0 +1,39 @@
+#!/bin/bash
+
+echo "bash test0"
+echo "bash test1"
+echo "bash test2"
+echo "bash test3"
+
+Num=1
+
+echo "$Num"
+
+
+
+a=1
+b=2
+c=3
+d=4
+
+echo "$a $b $c,$d"
+
+echo $a
+echo $b
+echo $c
+echo $d
+
+# for loop test.
+
+for test in 1 2 3 4 # will loop 4 times and print the echo statement 4 times.
+do
+  echo "$a $b $c $d"
+done
+
+#for test2 in (( a; b; c; d;))
+#do
+#  $a
+#  $b
+#  $c
+#  $d
+#done
