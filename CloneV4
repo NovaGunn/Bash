@@ -1,0 +1,120 @@
+#!/bin/bash
+
+# Prompt user for VM ID to clone
+read -p "Enter the VM ID to clone: " SOURCE_VM_ID
+
+# Validate input (ensure it's a number and VM exists)
+
+if [[ -z "SOURCE_VM_ID" ]]; then
+        echo "Error: VM ID cannot be empty."
+        exit 1
+fi
+
+
+if ! [[ "$SOURCE_VM_ID" =~ ^[0-9]+$ ]]; then
+        echo "Invalid VM ID. Please enter a valid number."
+        exit 1
+fi
+
+if ! qm status "$SOURCE_VM_ID" > /dev/null 2>&1; then
+        echo "VM ID $SOURCE_VM_ID does not exist." 
+        exit 1
+fi
+
+# Prompt user for a name for the cloned vm (optional) 
+#read -p "Enter a name for the new cloned VM: " NEW_VM_NAME
+
+# Generate a random unused VM ID
+while true; do
+        NEW_VM_ID=$((RANDOM % 10000)) # Adjust range if needed
+        if ! qm status "$NEW_VM_ID" > /dev/null 2>&1; then
+                break
+        fi
+done
+
+# Use default name if no name was provided
+
+if [[ -z "$NEW_VM_NAME" ]]; then
+        NEW_VM_NAME="cloned-vm-$NEW_VM_ID"
+fi 
+
+# Verify NEW_VM_ID
+if [[ -z "$NEW_VM_ID" ]]; then
+        echo "Error: Failed to generate a vlaid new VM ID."
+        exit 1
+fi
+
+echo "Generated new VM ID: $NEW_VM_ID"
+echo "New VM name: $NEW_VM_NAME"
+
+# Clone the VM with the specified or default name
+
+qm clone "$SOURCE_VM_ID" "$NEW_VM_ID" # --name "$NEW_VM_NAME"
+if [ $? -eq 0 ]; then
+        echo "Successfully cloned VM."
+else
+        echo "Failed to clone VM."
+        exit 1
+fi
+
+# Apply the custom name explicity after cloning if the --name flag doesn't work
+
+
+# add a delay to allow Proxmox to recognise the new VM before migrating
+echo "Waiting for Proxmox to recognise the new VM..."
+sleep 10 # Adjust delay time if needed
+
+# Remove the CD/DVD drive (if attached) from the clone VM
+echo "Removing CD/DVD drive from vm $NEW_VM_ID..."
+qm set "$NEW_VM_ID" -cdrom none
+        if [ $? -ne 0 ]; then
+        echo "Failed to remove CD/DVD drive."
+        exit 1
+fi
+
+# Debugging: Check if the prompt for migration appears
+echo "Prompting for target node..."
+
+declare -A NODE_MAP
+NODE_MAP["10.64.10.62"]="pve2"
+NODE_MAP["10.64.10.63"]="pve3" # Add more IPs and node names as needed
+
+
+# Prompt user for target Proxmox node to migrate to
+read -p "Enter the target node IP Address to migrate the VM to: " TARGET_NODE
+
+# Check if TARGET_NODE is empty
+if [[ -z "$TARGET_NODE" ]]; then
+        echo "Error: Target node cannot be empty."
+        exit 1
+fi
+
+# find the corresponding node name from the IP
+TARGET_NODE_NAME="${NODE_MAP[$TARGET_NODE]}"
+
+# Check if the IP exists in the mapping
+if [[ -z "$TARGET_NODE_NAME" ]]; then
+        echo "Error: No node found for IP address $TARGET_NODE."
+fi
+
+# Check if the VM is running, and migrate accordingly
+
+VM_STATUS=$(qm status "$NEW_VM_ID" | awk '{print $2}')
+if [[ "$VM_STATUS" == "running" ]]; then
+        echo "Migrating VM $NEW_VM_ID to node $TARGET_NODE (Online)..."
+        qm migrate "$NEW_VM_ID" "$TARGET_NODE"
+else
+        echo "Migrating VM $NEW_VM_ID to node $TARGET_NODE (offline)..."
+        qm migrate "$NEW_VM_ID" "$TARGET_NODE" 
+fi
+
+
+if [ $? -eq 0 ]; then 
+        echo "Successfully migrated VM $NEW_VM_ID to node $TARGET_NODE."
+else
+        echo "Failed to migrate VM."
+        exit 1
+fi
+
+
+
