@@ -1,0 +1,104 @@
+Bash: 
+
+to create a new file to work on a script is simple, use "nano" followed by whatever you want to name the file. 
+
+This opens up the text editor "nano" with that file name. Need to save the file to memory by pressing ctrl + o. Exit is ctrl + x. 
+
+The next step is to turn the file executable, so we can run the script is: 
+
+chmod +x [file name]
+
+if you are not the root user, you will need to put "sudo" at the start of the line, like this: 
+
+sudo chmod +x ... 
+
+###commands###
+
+qm list : lists vm in proxmox shell (Debian)
+
+cat /etc/pve/storage.cfg : shows the storage partitions (proxmox)
+
+df -h : shows file system
+
+df -i : shows the inodes of storage, important to understanding 
+storage capacity. 
+
+\ 
+~ = home
+expr : maths
+
+-eq = equals 
+-ne = not equal 
+-gt = greater than (?)
+
+-f = check file (ls -f)  
+rm = remove
+touch + [file name] = allows to create a file without using "nano" (?) 
+
+|| = or
+&& = and
+
+man + [any other command] = brings up the manual page for that specific command, useful.
+
+grep
+-q = quiet mode, doesn't print anything
+
+>> = redirect. 
+
+$? = exit code, show if the code was successful or not with the number 0 (success) 1+ (failed). 
+
+It's important to note, the exit code if not used properly can give false positives. For example, in a script with an "if" statement is purposely made to fail yet the echo statements made to tell you it has failed will show exit code 0. 
+
+Saying it was successful, yet you made the script to fail. It's important to understand the echo statements were successful, so the exit code shows successful. This is the distinction and importance of where to place the $? within the script.
+
+-le = less than or equal to ()
+
+###################################################################
+
+~~~where to save scripts~~~~
+
+We've had our scripts saved in the home directory, however, it's important to save it in a place other users (colleagues) can access to run it, if you're away. 
+
+we want to store in the bin directory, the command to do this is: 
+
+sudo mv [filename] /usr/local/bin/
+
+For our context, following Learn Linux TV we added "update" to the end to simplify the naming convention of our scripts. As the script we are using is an universal update script.
+
+
+ls -l /usr/local/bin 
+
+To check if the file has been moved. 
+
+to put user privileges/permissions on the file, so only root users can modify the script, use this command: 
+
+sudo chown root:root /usr/local/bin/update
+
+Now that we've done that, don't forget to put SUDO before NANO to have root privileges.
+
+/dev/null = a black hole
+
+sudo su - = changes the current session to a root user.
+
+##################################################################
+
+
+###Linux common problems:### 
+
+Thin Linc, a sponsored segment which is useful. Provides a virtual desktop experience using one of the Linux distributions.
+
+
+##SSH Failures###
+
+#one#
+trying to access server using ssh, but it doesn't work.
+
+First is to try and connect to the server via ssh.
+if it isn't that and its an issue being experienced by a single user, then using [tail] -f followed by the directory to the auth.log
+
+the command tail -f allows you to follow the log, allowing to see what happens when the user attempts to log in. 
+
+
+###sluggish###
+
+most Linux distributions will be using gnome as it core. The suggested fix is to look at "tracker". Which is baked into the gnome OS. It makes it easier for users to search their files/content by constantly scanning the system.
