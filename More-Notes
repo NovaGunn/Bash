@@ -1,0 +1,65 @@
+#!/bin/bash -  this a "shebang" industry standard. Points to the interpreter to be used.
+	      # Without this I'm sure the "kernel" might not understand what language you are using/
+
+
+# there two ways to use bash, one is to see the content and the other to execute.
+# cat <filename> or directory to file such as /notes/<filename> and it will printout what is
+# inside the file.
+
+# the other way is execute, this will run the code inside the file for example the echo statements below.
+# Before we can execute the file, we need to give it permission, to do this. use:
+
+
+# sudo chmod +x <filename>
+
+# additional information to know is, you can only execute and give a file the permission to execute in the
+# right directory. For example, you would not be able to execute bash.script in the home directory unless it was
+# in that directory.
+
+# for example, we are in the notes directory to execute the bash.script within the notes folder, if we are not inside
+# the notes folder, do this instead:
+
+# ./notes/bash.script
+
+
+# sudo chmod -x <filename>
+
+# does the opposite to +x and removes the executable permission.
+
+echo "bash test0"
+echo "bash test1"
+echo "bash test2"
+echo "bash test3"
+
+
+
+# ctrl + o  saves the file
+# ctrl + x  exits out of nano
+# alt  + u  is undo
+# ctrl + c  cancels
+# alt  + e  is redo
+
+# alt + shift + 6 is copy
+# alt + a   is highlighting what you want to copy
+# ctrl + u  is paste once copied
+
+
+# alt + n  adds line numbering
+
+# ctrl + /  is search
+# ctrl + q is search
+
+    name      =  what you want that name to be
+# [variables] = [values]
+
+# for example:
+
+Num=1
+
+echo "$Num" 
+
+# can test this in the command line. By doing exactly what I typed above this line.
+
+# Set the value to variable, then echo $Num to echo the value we assinged to it and not the variable.
+
+# note: when done within the command line it is temporary. When the terminal closes that variable will not be saved, unless saved within a file.
