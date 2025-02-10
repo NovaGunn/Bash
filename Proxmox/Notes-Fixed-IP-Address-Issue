@@ -1,0 +1,46 @@
+
+https://www.reddit.com/r/Proxmox/comments/jhkqmm/qm_set_vmid_reverse_command/
+
+qm uplink 102 --idlist net0
+
+nano /etc/pve/qemu-server/vmid.conf 
+
+edit: 
+
+Net0: with a ",link_down=1" at the end, then turn off the network interface, change the 0 to a 1 to turn it back on after
+shutting down the VM.
+
+#################################################################################################################
+
+https://forum.proxmox.com/threads/how-to-create-or-edit-file-with-qm-guest-agent.89759/
+
+pvesh create /nodes/ns1000/qemu/100/agent/file-write --content "$(echo -e 'test')" --file "/test.file"
+
+qm guest exec 100 -- /bin/sh -c "echo test > /test.file"
+
+
+#################################################################################################################
+
+
+https://forum.proxmox.com/threads/all-vms-dont-boot-anymore-after-upgrade-to-proxmox-8.129831/
+
+##################################################################################################
+
+sudo cp test.file > test.txt
+
+
+qm guest exec 106 -- cp -rf ifcfg-ens18 /etc/sysconfig/network-scripts/ifcfg-ens18
+
+
+
+sed -i 's/STRING_TO_REPLACE/STRING_TO_REPLACE_IT/g' filename
+
+line 9
+
+net0: virtio=BC:24:11:0A:9E:93,bridge=vmbr0,firewall=1
+net0: virtio=BC:24:11:0A:9E:93,bridge=vmbr0,firewall=1,lock_down=1
+
+
+####################################################################
+
+sed -i '9/net0: virtio=BC:24:11:0A:9E:93,bridge=vmbr0,firewall=1/net0: virtio=BC:24:11:0A:9E:93,bridge=vmbr0,firewall=1,lock_down=1/g' /etc/pve/qemu-server/104.conf 
