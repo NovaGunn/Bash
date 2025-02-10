@@ -1,0 +1,18 @@
+for i in ${qm_destroy[@]}; do
+    if echo "$EXCLUDE_VMS" | grep -q "\b$i\b"; then
+        echo "Skipping destruction for VM $i (excluded)"
+        continue
+    fi
+
+     echo "I will destroy VM $i"
+     qm destroy $i --purge
+     echo "VM $i has been destroyed"
+     echo ""
+done
+
+
+
+# echo "End of script and deletion of VMs" 
+# rm $VM_LIST
+# rm $VM_DESTROY
+# rm $VM_EXCLUDE
