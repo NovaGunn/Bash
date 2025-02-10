@@ -1,0 +1,43 @@
+bookmark: 
+
+agent permission being disabled/frozen and unable to run the qm guess exec commands even though the qm agent is installed and was running. 
+This forum post tells us its to do with the blacklist file and to comment out the 
+guess-exec etc to allow commands to run. 
+
+https://forum.proxmox.com/threads/agent-error-the-command-guest-exec-has-been-disabled-for-this-instance.117496/
+
+This next bookmark was the only forum post which had something to us than the usual test
+if qm agent is installed properly etc. 
+
+By altering the permission on the OS in the VM itself from "enforicing" to "Permissive" 
+
+Commands: (in the VM) 
+
+sestatus (check output)
+sudo setenforce 0 (this changes the enforcing to permissive)
+
+forgot to add the link: 
+
+Here's another useful one instead
+
+https://pve.proxmox.com/wiki/Qemu-guest-agent#:~:text=The%20qemu%2Dguest%2Dagent%20is,execute%20command%20in%20the%20guest.
+
+Next step: 
+
+everything works, but for some reason when running the script I am getting permission denied on the qm guess exec commands. 
+Want to turn on/connect to the network interface in the clone. The hurdle is the denial, Callum said the agent is it's own thing and
+probably need to elevate that specific account to run  the commands. 
+
+at the moment I am learning I can run the commands within the VM to turn on the interface, the VM will be using. It's just getting 
+the top right in the drop down menu: 
+
+Red Hat Ethernet Off
+Intel Ethernet Off
+User1 
+
+to turn intel Ethernet on/connect. Then figure out how  to manually set the ip address.
+
+
+Bookmark 3: 
+
+https://unix.stackexchange.com/questions/199565/interface-doesnt-go-up-with-ip-link-set-interface-up
