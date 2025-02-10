@@ -1,0 +1,33 @@
+# Get the proxmox config path for the VM
+CONFIG_PATH="/etc/pve/nodes/$(qm status "$NEW_VM_ID" --output-format json |jq -r '.node')
+
+# Prompt user for  the new IP address
+read -p "Enter new ip address for the clone: " NEW_IP
+
+# Detect the VM's active network interface dynamically
+echo "Detecting the active network interface inside the VM..."
+INTERFACE=$(qm quest exec $NEW_VM_ID -- ip -o -4 route show default | awk '{print $5}'
+
+# Check if the interface was detected
+if [ -z "$INTERFACE" ]; then
+        echo "Error: Could not detect an active network interface inside the VM."
+        exit 1
+fi
+
+echo "Detected network interface: $INTERFACE"
+
+# Flush existing IP address on the detected interface
+echo "Resetting IP address on interface $INTERFACE..."
+qm guest exec $NEW_VM_ID -- ip addr flush dev $INTERFACE
+
+# Assign the new IP address on the detected interface
+echo "Assigning new IP address ($NEW_IP) to interface $INTERFACE..."
+qm guest exec $NEW_VM_ID -- ip addr add $NEW_IP/24 dev $INTERFACE
+
+echo "IP address updated successfully!"
+
+# Does not work as I intended. If i remember correctly, one of the reasons was the VM did not have boot on startup.
+# So, had to manually turn on the network interface inside the VM
+
+# Also QM Guest Exec command cannot and does not have permission to do this kind of alteration as well.
+# Even if you add the QM guest agent as a Sudoer and set the linux box (SELinux) to permissive 
