@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Configuration Variables
+SOURCE_VM_ID="101"           # ID of the source VM
+NEW_VM_ID="102"              # ID for the cloned VM
+TARGET_SERVER="10.164.10.207" # IP/Hostname of the target Proxmox server
+STORAGE_VM="VMstorage"       # Storage name for VM on the target server
+STORAGE_BACKUPS="backups"    # Storage name for backups on the target server
+# NEW_VM_NAME="cloned-vm"      # Name for the cloned VM
+# RESET_IP="192.168.1.200"     # New IP address to assign
+# NEW_NETMASK="255.255.255.0"  # Netmask for the new IP
+# NEW_GATEWAY="192.168.1.1"    # Gateway for the new IP
+
+# Step 1: Clone the VM
+echo "Cloning VM $SOURCE_VM_ID to $NEW_VM_ID on the current server..."
+qm clone $SOURCE_VM_ID $NEW_VM_ID --name $NEW_VM_NAME
+if [ $? -ne 0 ]; then
+    echo "Failed to clone VM $SOURCE_VM_ID. Exiting."
+    exit 1
+fi
+
+# Step 2: Backup the VM
+BACKUP_FILE="/var/lib/vz/dump/vm-${NEW_VM_ID}.tar.lzo"
+echo "Creating backup of the new VM $NEW_VM_ID..."
+qm stop $NEW_VM_ID
+vzdump $NEW_VM_ID --dumpdir /var/lib/vz/dump --mode stop --compress lzo
+if [ $? -ne 0 ]; then
+    echo "Failed to create a backup. Exiting."
+    exit 1
+fi
+
+# Step 3: Transfer the VM and backup to the target server
+echo "Transferring VM and backup to the target server $TARGET_SERVER..."
+scp $BACKUP_FILE root@$TARGET_SERVER:/var/lib/vz/dump/
+ssh root@$TARGET_SERVER "qmrestore /var/lib/vz/dump/vm-${NEW_VM_ID}.tar.lzo $NEW_VM_ID --storage $STORAGE_VM"
+ssh root@$TARGET_SERVER "cp /var/lib/vz/dump/vm-${NEW_VM_ID}.tar.lzo /mnt/$STORAGE_BACKUPS/"
+if [ $? -ne 0 ]; then
+    echo "Failed to transfer or restore VM. Exiting."
+    exit 1
+fi
+
+# Step 4: Reset the IP address
+echo "Resetting the IP address of the cloned VM on the target server..."
+ssh root@$TARGET_SERVER "qm set $NEW_VM_ID --ipconfig0 ip=$RESET_IP/$NEW_NETMASK,gw=$NEW_GATEWAY"
+if [ $? -ne 0 ]; then
+    echo "Failed to reset the IP address. Exiting."
+    exit 1
+fi
+
+# Step 5: Start the VM on the target server
+echo "Starting the cloned VM on the target server..."
+ssh root@$TARGET_SERVER "qm start $NEW_VM_ID"
+if [ $? -ne 0 ]; then
+    echo "Failed to start the VM. Exiting."
+    exit 1
+fi
+
+echo "VM $NEW_VM_ID successfully cloned, transferred, and configured!"
