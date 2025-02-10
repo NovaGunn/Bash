@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# script to run a shutdown and destroy command
+
+VM_LIST=/tmp/list_VM.list
+VM_EXCLUDE_LIST=/tmp/exclude_VM.list
+VM_DESTROY=/tmp/list_DESTROY.list
+
+# VM IDs to exclude (can be modified)
+EXLCUDE_VMS="100"
+
+# catch the list of running  VMs
+qm list | awk 'NR>1{ print $1 }' > $VM_LIST
+
+# Read the list of VM IDs into an array
+mapfile -t listvm < $VM_LIST
+
+# Loop to shutdown VMs
+for i in ${listvm[@]}; do
+   if echo "$EXCLUDE_VMS" | grep -q "\b$i\b"; then
+       echo "Skipping shutdown for VM $i (excluded)"
+       continue
+   fi
+
+   echo "I will shutdown VM $i"
+	qm shutdown $i
+   echo "VM $i has been shutdown"
+   echo ""
+done
+
+# Loop to destroy the VMs (after shutdown)
+qm destroy | awk 'NR>1{ print $1 }' > $VM_DESTROY
+
+mapfile -t qm_destroy < $VM_DESTROY
+
+for i in ${listvm[@]}; do
+    if echo "$EXCLUDE_VMS" | grep -q "\b$i\b"; then
+        echo "Skipping destruction for VM $i (excluded)"
+        continue
+    fi
+
+     echo "I will destroy VM $i"
+     qm destroy $i --purge
+     echo "VM $i has been destroyed"
+     echo ""
+done 
+
+echo "End of script and deletion of VMs" 
+rm $VM_LIST
+rm $VM_DESTROY
+rm $VM_EXCLUDE
+
+
+# Be careful!!! it works apart from the Exlude. I know I am not properly calling the Exclude list in the loops
+# to actually remove them from the shutdown and destroy commands. Haven't had time to fix yet. 
+
+# Alternatively, Proxmox does have a mass shutdown button in the top right and destroy (iirc). Which is better than
+# running my script. 
