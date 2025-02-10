@@ -1,0 +1,142 @@
+#!/bin/bash
+
+# Prompt user for VM ID to clone
+
+read -p "Enter the VM ID to clone: " SOURCE_VM_ID
+
+# Validate input (ensure it's a number and VM exists)
+
+if [[ -z "SOURCE_VM_ID" ]]; then
+        echo "Error: VM ID cannot be empty."
+        exit 1
+fi
+
+
+if ! [[ "$SOURCE_VM_ID" =~ ^[0-9]+$ ]]; then
+        echo "Invalid VM ID. Please enter a valid number."
+        exit 1
+fi
+
+if ! qm status "$SOURCE_VM_ID" > /dev/null 2>&1; then
+ echo "VM ID $SOURCE_VM_ID does not exist." 
+        exit 1
+fi
+
+# Generate a random unused VM ID
+
+while true; do
+        NEW_VM_ID=$((RANDOM % 10000)) # Adjust range if needed
+        if ! qm status "$NEW_VM_ID" > /dev/null 2>&1; then
+                break
+        fi
+done
+
+# Use default name if no name was provided
+
+if [[ -z "$NEW_VM_NAME" ]]; then
+        NEW_VM_NAME="cloned-vm-$NEW_VM_ID"
+fi 
+
+# Verify NEW_VM_ID
+if [[ -z "$NEW_VM_ID" ]]; then
+        echo "Error: Failed to generate a vlaid new VM ID."
+        exit 1
+fi
+
+echo "Generated new VM ID: $NEW_VM_ID"
+
+# Clone the VM with the specified or default name
+
+qm clone "$SOURCE_VM_ID" "$NEW_VM_ID" # --name "$NEW_VM_NAME"
+if [ $? -eq 0 ]; then
+        echo "Successfully cloned VM."
+else
+        echo "Failed to clone VM."
+        exit 1
+fi
+
+# Start the cloned VM
+
+echo "Starting the cloned VM $NEW_VM_ID..."
+qm start "$NEW_VM_ID"
+if [ $? -ne 0 ]; then
+        echo "Failed to start VM $NEW_VM_ID."
+        exit 1
+fi
+
+# Allow the agent to initialise
+sleep 10
+
+# Check qemu-guest-agent is running on the cloned VM"
+qm agent "$NEW_VM_ID" ping
+if [ $? -eq 0 ]; then
+        echo "QEMU guest agent is running"
+fi
+
+# Detect and enable all network interfaces
+echo "Detecting network interfaces in VM $NEW_VM_ID..."
+INTERFACES=$(qm guest exec "$NEW_VM_ID" -- ls /sys/class/net )
+
+if [ -z "$INTERFACES" ]; then
+        echo "No network interfaces found in the vm"
+        exit 1
+fi
+
+for int in $INTERFACES; do
+        echo "Enabling interface: $INTINTERFACES"
+        qm guest exec "$NEW_VM_ID" -- ifconfig "$INTINTERFACES" up
+done
+
+echo "All interfaces have been enabled."
+# Prompt user for the new ip address
+read -p "Enter new ip address for the clone: " NEW_IP
+
+# Flush existing IP address on the detected interface
+echo "Resetting IP address on interface $INTERFACE..."
+qm guest exec "$NEW_VM_ID" -- ip addr flush dev "$INTERFACE"
+
+# Assign the new ip address on the detected interface
+echo "Assigning new IP address ($NEW_IP/24) to interface $INTERFACE..."
+qm guest exec "$NEW_VM_ID" -- ip addr add "$NEW_IP/24" dev "$INTERFACE"
+
+echo "IP address updated successfully!"
+
+# Remove the CD/DVD drive (if attached) from the clone VM
+
+echo "Removed CD/DVD for migration."
+qm set "$NEW_VM_ID" -cdrom none
+        if [ $? -ne 0 ]; then
+        echo "Failed to remove CD/DVD drive."
+        exit 1
+fi
+
+# Prompt user for target Proxmox node to migrate to
+
+read -p "Enter the target node to migrate the VM to: " TARGET_NODE
+
+# Check if TARGET_NODE is empty
+
+if [[ -z "$TARGET_NODE" ]]; then
+        echo "Error: Target node cannot be empty."
+        exit 1
+fi
+
+
+# Check if the VM is running, and migrate accordingly
+
+VM_STATUS=$(qm status "$NEW_VM_ID" | awk '{print $2}')
+if [[ "$VM_STATUS" == "running" ]]; then
+        echo "Migrating VM $NEW_VM_ID to node $TARGET_NODE (Online)..."
+        qm migrate "$NEW_VM_ID" "$TARGET_NODE" --online --with-local-disks
+else
+        echo "Migrating VM $NEW_VM_ID to node $TARGET_NODE (offline)..."
+        qm migrate "$NEW_VM_ID" "$TARGET_NODE" 
+fi
+
+
+if [ $? -eq 0 ]; then 
+        echo "Successfully migrated VM $NEW_VM_ID to node $TARGET_NODE."
+else
+        echo "Failed to migrate VM."
+        exit 1
+fi
