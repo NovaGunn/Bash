@@ -1,0 +1,38 @@
+# Detect and enable all network interfaces
+echo "Detecting network interfaces in VM $NEW_VM_ID..."
+INTERFACES=$(qm guest exec "$NEW_VM_ID" -- ls /sys/class/net | cut -d '\' -f1)
+
+if [ -z "$INTERFACES" ]; then
+        echo "No network interfaces found in the vm"
+        exit 1
+fi
+
+for int in $INTERFACES; do
+        echo "Enabling interface: $INTERFACES"
+        qm guest exec "$NEW_VM_ID" -- ifconfig "$INTERFACES" up
+done
+
+echo "All interfaces have been enabled."
+
+# The issue is  the commands with qm guest exec will not work without
+# express permission to do so within the vm itself. Commenting out the black listed parameters 
+# to allow the commands to run still doesn't execute the code. It just allows the script to continue
+# without exiting. 
+
+# A potential fix to this is to elevate the agent to a sudo (root) account or only allow specific commands to 
+# run on the VM through the agent. At which point introduces security risks in the script and asking the client
+# to do far more than, just run this script and follow prompt's. 
+
+# Prompt user for the new ip address
+read -p "Enter new ip address for the clone: " NEW_IP
+
+
+# Flush existing IP address on the detected interface
+echo "Resetting IP address on interface $INTERFACE..."
+qm guest exec "$NEW_VM_ID" -- ip addr flush dev "$INTERFACE"
+
+# Assign the new ip address on the detected interface
+echo "Assigning new IP address ($NEW_IP/24) to interface $INTERFACE..."
+qm guest exec "$NEW_VM_ID" -- ip addr add "$NEW_IP/24" dev "$INTERFACE"
+
+echo "IP address updated successfully!"
